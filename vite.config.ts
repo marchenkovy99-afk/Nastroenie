@@ -1,0 +1,1 @@
+import {defineConfig} from 'vite';import react from '@vitejs/plugin-react';export default defineConfig({base:'./',plugins:[react()],build:{target:'es2022',rollupOptions:{output:{manualChunks:{react:['react','react-dom'],database:['dexie','dexie-react-hooks'],cloud:['@supabase/supabase-js']}}}}});

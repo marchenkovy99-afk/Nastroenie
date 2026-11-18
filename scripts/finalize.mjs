@@ -1,0 +1,10 @@
+import {readdir,writeFile} from 'node:fs/promises';
+const files=(await readdir('dist',{recursive:true})).filter(f=>!f.endsWith('sw.js')&&!f.includes('.map'));
+const {createHash}=await import('node:crypto');const version=createHash('sha256').update(files.join('|')).digest('hex').slice(0,12);
+const urls=files.filter(f=>f.includes('.')&&!f.endsWith('.gitkeep')).map(f=>'./'+f);urls.push('./');
+await writeFile('dist/sw.js',`const CACHE='lad-${version}';const ROOT=self.registration.scope;const FILES=${JSON.stringify(urls)}.map(p=>new URL(p,ROOT).href);
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lad-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.origin!==self.location.origin||!u.href.startsWith(ROOT))return;if(e.request.mode==='navigate'&&(!u.pathname.includes('.')||u.href===new URL('index.html',ROOT).href)){e.respondWith(caches.open(CACHE).then(c=>c.match(new URL('index.html',ROOT).href)).then(r=>r||fetch(e.request)));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});
+self.addEventListener('push',e=>{let d={};try{d=e.data.json()}catch{}e.waitUntil(self.registration.showNotification(d.title||'Лад',{body:d.body||'Как ты сейчас? Найди минутку для себя.',icon:new URL('icon-192.png',ROOT).href,badge:new URL('icon-192.png',ROOT).href,tag:d.tag||'lad-reminder',data:{url:ROOT}}));});
+self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{if(list.length)return list[0].focus();return self.clients.openWindow(ROOT)}));});`);

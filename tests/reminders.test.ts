@@ -1,0 +1,3 @@
+import {it,expect} from 'vitest';import {reminderSlot} from '../src/reminder-time';
+it('matches one schedule slot in user timezone with a five minute late window',()=>{expect(reminderSlot(new Date('2026-11-17T06:02:00Z'),'Europe/Moscow',['09:00'])).toBe('2026-11-17:09:00');expect(reminderSlot(new Date('2026-11-17T06:07:00Z'),'Europe/Moscow',['09:00'])).toBe(null)});
+it('handles midnight late delivery and invalid times without throwing',()=>{expect(reminderSlot(new Date('2026-11-17T21:02:00Z'),'Europe/Moscow',['23:59'])).toBe('2026-11-17:23:59');expect(reminderSlot(new Date(),'BadZone',['bad'])).toBe(null)});

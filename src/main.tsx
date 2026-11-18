@@ -1,0 +1,4 @@
+import {StrictMode,Component,type ReactNode} from 'react';import {createRoot} from 'react-dom/client';import App from './App';import './styles.css';
+class Boundary extends Component<{children:ReactNode},{error:boolean}>{state={error:false};static getDerivedStateFromError(){return {error:true}}render(){return this.state.error?<div className="recovery"><h1>Давай попробуем ещё раз</h1><p>Не удалось открыть интерфейс. Записи на устройстве не удалены.</p><button onClick={()=>location.reload()}>Перезагрузить</button></div>:this.props.children}}
+createRoot(document.getElementById('root')!).render(<StrictMode><Boundary><App/></Boundary></StrictMode>);
+if('serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register(import.meta.env.BASE_URL+'sw.js').catch(()=>{});});
