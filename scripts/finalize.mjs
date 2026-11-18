@@ -1,10 +1,57 @@
-import {readdir,writeFile} from 'node:fs/promises';
-const files=(await readdir('dist',{recursive:true})).filter(f=>!f.endsWith('sw.js')&&!f.includes('.map'));
-const {createHash}=await import('node:crypto');const version=createHash('sha256').update(files.join('|')).digest('hex').slice(0,12);
-const urls=files.filter(f=>f.includes('.')&&!f.endsWith('.gitkeep')).map(f=>'./'+f);urls.push('./');
-await writeFile('dist/sw.js',`const CACHE='lad-${version}';const ROOT=self.registration.scope;const FILES=${JSON.stringify(urls)}.map(p=>new URL(p,ROOT).href);
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lad-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.origin!==self.location.origin||!u.href.startsWith(ROOT))return;if(e.request.mode==='navigate'&&(!u.pathname.includes('.')||u.href===new URL('index.html',ROOT).href)){e.respondWith(caches.open(CACHE).then(c=>c.match(new URL('index.html',ROOT).href)).then(r=>r||fetch(e.request)));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});
+import { createHash } from 'node:crypto';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
+
+const files = (await readdir('dist', { recursive: true, withFileTypes: true }))
+  .filter(file => file.isFile() && !['sw.js', '.gitkeep'].includes(file.name) && !file.name.endsWith('.map'))
+  .map(file => file.parentPath.slice('dist'.length + 1).split(/[\\/]/).filter(Boolean).concat(file.name).join('/'))
+  .sort();
+
+const assets = await Promise.all(files.map(async file => {
+  const bytes = await readFile('dist/' + file);
+  return { file, integrity: 'sha256-' + createHash('sha256').update(bytes).digest('base64') };
+}));
+const version = createHash('sha256').update(JSON.stringify(assets)).digest('hex').slice(0, 12);
+
+await writeFile('dist/sw.js', `const CACHE='lad-${version}';
+const ROOT=self.registration.scope;
+const INDEX=new URL('index.html', ROOT).href;
+const ASSETS=${JSON.stringify(assets)};
+
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    const requests = ASSETS.map(({file, integrity}) =>
+      new Request(new URL(file, ROOT), {cache: 'reload', integrity})
+    );
+    await cache.addAll(requests);
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    // Keep the previous release for pages still open during the update.
+    const previous = (await caches.keys()).filter(key => key.startsWith('lad-') && key !== CACHE);
+    await Promise.all(previous.slice(0, -1).map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin || !url.href.startsWith(ROOT)) return;
+  const isShell = request.mode === 'navigate' && (!url.pathname.includes('.') || url.href === INDEX);
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    const current = await cache.match(isShell ? INDEX : request);
+    if (current) return current;
+    if (!isShell) {
+      const previous = await caches.match(request);
+      if (previous) return previous;
+    }
+    return fetch(request);
+  })());
+});
 self.addEventListener('push',e=>{let d={};try{d=e.data.json()}catch{}e.waitUntil(self.registration.showNotification(d.title||'Лад',{body:d.body||'Как ты сейчас? Найди минутку для себя.',icon:new URL('icon-192.png',ROOT).href,badge:new URL('icon-192.png',ROOT).href,tag:d.tag||'lad-reminder',data:{url:ROOT}}));});
 self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{if(list.length)return list[0].focus();return self.clients.openWindow(ROOT)}));});`);
