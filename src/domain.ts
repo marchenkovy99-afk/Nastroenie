@@ -3,7 +3,13 @@ export interface Entry extends Draft {id:string;scope:string;revision:number;del
 export interface Operation {key:string;operationId:string;scope:string;entryId:string;baseRevision:number;payload:Entry}
 export interface Preferences {theme:'light'|'dark'|'system';times:string[];reminders:boolean;timeZone:string}
 export const defaultPrefs:Preferences={theme:'system',times:['09:00','13:00','17:00','21:00'],reminders:false,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone};
-export const moods=[{label:'Очень плохо',color:'#B5C3D8'},{label:'Плохо',color:'#CEC3D8'},{label:'Нейтрально',color:'#E8E2D2'},{label:'Хорошо',color:'#C2D6B3'},{label:'Очень хорошо',color:'#F2D878'}];
+export const moods = [
+  { label: 'Очень плохо', color: '#858D9B' },
+  { label: 'Плохо', color: '#A4A5B0' },
+  { label: 'Нейтрально', color: '#C6C8CC' },
+  { label: 'Хорошо', color: '#64E579' },
+  { label: 'Очень хорошо', color: '#FFD447' },
+];
 export function localDate(d:Date){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 export function addDays(d:string,n:number){const v=new Date(d+'T12:00:00');v.setDate(v.getDate()+n);return localDate(v)}
 export function weekStart(d:string){const day=new Date(d+'T12:00:00').getDay();return addDays(d,-((day+6)%7))}
