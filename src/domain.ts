@@ -4,11 +4,11 @@ export interface Operation {key:string;operationId:string;scope:string;entryId:s
 export interface Preferences {theme:'light'|'dark'|'system';times:string[];reminders:boolean;timeZone:string}
 export const defaultPrefs:Preferences={theme:'system',times:['09:00','13:00','17:00','21:00'],reminders:false,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone};
 export const moods = [
-  { label: 'Очень плохо', color: '#656D80', faceColor: '#FFFFFF' },
-  { label: 'Плохо', color: '#7900FF', faceColor: '#FFFFFF' },
-  { label: 'Нейтрально', color: '#0060F5', faceColor: '#FFFFFF' },
-  { label: 'Хорошо', color: '#00E64D', faceColor: '#102118' },
-  { label: 'Очень хорошо', color: '#FF8600', faceColor: '#211700' },
+  { label: 'Очень плохо', color: '#34456E', faceColor: '#FFF3DE' },
+  { label: 'Плохо', color: '#506CA0', faceColor: '#FFFFFF' },
+  { label: 'Нейтрально', color: '#9AAED0', faceColor: '#182A46' },
+  { label: 'Хорошо', color: '#8F9F49', faceColor: '#233019' },
+  { label: 'Очень хорошо', color: '#EAB078', faceColor: '#39261D' },
 ];
 export function localDate(d:Date){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 export function addDays(d:string,n:number){const v=new Date(d+'T12:00:00');v.setDate(v.getDate()+n);return localDate(v)}
