@@ -4,10 +4,15 @@ import {reminderSlot} from './reminder-time.ts';
 const url=Deno.env.get('SUPABASE_URL')!;
 const db=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const origin='https://lad-mood-journal.marchenkovy99.chatgpt.site';
-const headers={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization,apikey,content-type,x-lad-cron','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Content-Type':'application/json'};
-const answer=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
+const allowedOrigins=new Set([origin,'https://marchenkovy99-afk.github.io']);
+const baseHeaders={'Access-Control-Allow-Headers':'authorization,apikey,content-type,x-lad-cron','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Content-Type':'application/json'};
 function allowedEndpoint(endpoint:string){try{const u=new URL(endpoint);return u.protocol==='https:'&&(u.hostname==='fcm.googleapis.com'||u.hostname==='updates.push.services.mozilla.com'||u.hostname.endsWith('.push.apple.com')||u.hostname.endsWith('.notify.windows.com'))&&!u.username&&!u.password&&!u.port}catch{return false}}
 Deno.serve(async(req:Request)=>{
+ const requestOrigin=req.headers.get('Origin');
+ const headers=new Headers(baseHeaders);
+ headers.set('Vary','Origin');
+ if(requestOrigin&&allowedOrigins.has(requestOrigin))headers.set('Access-Control-Allow-Origin',requestOrigin);
+ const answer=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
  if(req.method==='OPTIONS')return new Response(null,{headers});
  const action=new URL(req.url).searchParams.get('action');
  const {data:config,error:configError}=await db.from('lad_push_config').select('*').eq('id',1).single();
